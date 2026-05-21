@@ -32,6 +32,7 @@ body {
   color: var(--text);
   font-family: Roboto, sans-serif;
   line-height: 1.6;
+  overflow-x: hidden;
 }
 
 a {
@@ -165,9 +166,6 @@ pre {
   color: var(--brand);
 }
 
-.docs-nav__menu a.is-hidden {
-  display: none;
-}
 
 .nav-method {
   display: inline-flex;
@@ -198,6 +196,7 @@ pre {
 }
 
 .docs-main {
+  min-width: 0;
   background: var(--surface);
 }
 
@@ -235,9 +234,10 @@ pre {
   margin: 0 0 14px;
   color: #333;
   font-family: Montserrat, sans-serif;
-  font-size: clamp(34px, 4vw, 52px);
+  font-size: clamp(2rem, 4vw, 3.25rem);
   line-height: 1.15;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .docs-intro p {
@@ -254,9 +254,51 @@ pre {
   margin-top: 22px;
 }
 
+.docs-tabbar {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 100%;
+  margin: 0 0 22px;
+  padding: 6px;
+  border: 1px solid rgba(50, 50, 159, 0.12);
+  border-radius: 999px;
+  background: #f3f5fb;
+}
+
+.docs-tabbar__button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: transparent;
+  color: #556070;
+  font-family: Montserrat, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.docs-tabbar__button:hover {
+  color: var(--brand);
+}
+
+.docs-tabbar__button.is-active {
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(50, 50, 159, 0.2);
+}
+
+.docs-tab-hidden {
+  display: none !important;
+}
+
 .docs-intro__chips span {
   display: inline-flex;
   align-items: center;
+  max-width: 100%;
   padding: 6px 11px;
   border: 1px solid rgba(50, 50, 159, 0.14);
   border-radius: 999px;
@@ -264,6 +306,7 @@ pre {
   color: var(--brand);
   font-size: 12px;
   font-weight: 700;
+  white-space: normal;
 }
 
 .docs-section h2 {
@@ -356,12 +399,18 @@ pre {
 }
 
 .table-wrap {
+  display: block;
   width: 100%;
-  overflow: auto;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 
 .docs-table {
   width: 100%;
+  min-width: 720px;
   border-collapse: collapse;
   background: #fff;
 }
@@ -399,9 +448,13 @@ pre {
 
 .code-block {
   margin: 0;
+  max-width: 100%;
   border: 1px solid rgba(38, 50, 56, 0.1);
   border-radius: 8px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
   box-shadow: var(--shadow);
   background: var(--dark-soft);
 }
@@ -441,8 +494,9 @@ pre {
 
 .code-block pre {
   margin: 0;
+  min-width: max(100%, max-content);
   padding: 18px 20px;
-  overflow: auto;
+  overflow: visible;
   background: #11171a;
   color: #fff;
   font-size: 14px;
@@ -460,6 +514,7 @@ pre {
 .docs-rail {
   position: sticky;
   top: 0;
+  min-width: 0;
   height: 100vh;
   padding: 32px 40px;
   background: var(--dark);
@@ -557,6 +612,10 @@ pre {
     align-items: center;
     justify-content: center;
     flex-direction: column;
+    right: 16px;
+    bottom: 16px;
+    width: 52px;
+    height: 52px;
   }
 
   .docs-app {
@@ -599,14 +658,51 @@ pre {
     font-size: 17px;
   }
 
+  .docs-tabbar {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    border-radius: 20px;
+  }
+
+  .docs-tabbar__button {
+    width: 100%;
+    text-align: center;
+  }
+
+  .docs-intro__chips {
+    gap: 8px;
+  }
+
   .docs-subgrid {
     grid-template-columns: 1fr;
+  }
+
+  .code-block__header {
+    flex-wrap: wrap;
   }
 }
 
 @media (max-width: 640px) {
+  .docs-intro,
+  .docs-section,
+  .docs-rail {
+    padding: 22px 16px;
+  }
+
+  .docs-kicker {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+
   .docs-intro h1 {
-    font-size: 34px;
+    font-size: 2.2rem;
+  }
+
+  .docs-intro p,
+  .docs-section p,
+  .docs-section li {
+    font-size: 15px;
   }
 
   .docs-endpoint-heading {
@@ -619,8 +715,12 @@ pre {
     flex-wrap: wrap;
   }
 
+  .docs-intro__chips span {
+    font-size: 11px;
+  }
+
   .docs-table {
-    min-width: 640px;
+    min-width: 720px;
   }
 
   .code-block pre {

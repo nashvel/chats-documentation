@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Chat SSO Integrator Guide</title>
-    <meta name="description" content="Provider-based SSO integration guide for HILLBCS Chats.">
+    <title>Chat Integration Guide</title>
+    <meta name="description" content="Provider-based SSO and external messaging integration guide for HILLBCS Chats.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
@@ -21,7 +21,7 @@
             <div class="docs-nav__top">
                 <div class="docs-nav__brand">
                     <div class="docs-nav__title">HILLBCS Chats</div>
-                    <div class="docs-nav__subtitle">SSO Integration</div>
+                    <div class="docs-nav__subtitle">Integration Docs</div>
                 </div>
 
                 <label class="docs-nav__search">
@@ -33,37 +33,41 @@
             </div>
 
             <nav class="docs-nav__menu">
-                <a href="#overview" data-nav-item>
+                <a href="#overview" data-nav-item data-doc-tab="sso">
                     <span class="nav-method nav-method--basic">guide</span>
                     <span>Overview</span>
                 </a>
-                <a href="#chat-config" data-nav-item>
+                <a href="#chat-config" data-nav-item data-doc-tab="sso">
                     <span class="nav-method nav-method--basic">config</span>
                     <span>Chat Configuration</span>
                 </a>
-                <a href="#endpoint" data-nav-item>
+                <a href="#endpoint" data-nav-item data-doc-tab="sso">
                     <span class="nav-method nav-method--post">post</span>
                     <span>Login URL Endpoint</span>
                 </a>
-                <a href="#flow" data-nav-item>
+                <a href="#flow" data-nav-item data-doc-tab="sso">
                     <span class="nav-method nav-method--basic">flow</span>
                     <span>Integration Flow</span>
                 </a>
-                <a href="#laravel" data-nav-item>
+                <a href="#laravel" data-nav-item data-doc-tab="sso">
                     <span class="nav-method nav-method--basic">php</span>
                     <span>Laravel Example</span>
                 </a>
-                <a href="#curl" data-nav-item>
+                <a href="#curl" data-nav-item data-doc-tab="sso">
                     <span class="nav-method nav-method--post">curl</span>
                     <span>cURL Example</span>
                 </a>
-                <a href="#notes" data-nav-item>
+                <a href="#notes" data-nav-item data-doc-tab="sso">
                     <span class="nav-method nav-method--basic">notes</span>
                     <span>Integrator Notes</span>
                 </a>
-                <a href="#maintainers" data-nav-item>
+                <a href="#maintainers" data-nav-item data-doc-tab="sso">
                     <span class="nav-method nav-method--basic">ops</span>
                     <span>Maintainer Notes</span>
+                </a>
+                <a href="#external-messaging" data-nav-item data-doc-tab="messaging">
+                    <span class="nav-method nav-method--post">post</span>
+                    <span>External Messaging API</span>
                 </a>
             </nav>
 
@@ -75,21 +79,39 @@
         <main class="docs-main">
             <section class="docs-intro">
                 <div class="docs-intro__inner">
-                    <div class="docs-kicker">HILLBCS Chats • SSO Integration</div>
-                    <h1>Chat SSO Integrator Guide</h1>
-                    <p>
-                        Connect an upstream app such as Hiring Hall or Workspace to HILLBCS Chats using a
-                        provider-specific API key. The source system does not need to generate Chat JWTs directly.
-                    </p>
-                    <div class="docs-intro__chips">
-                        <span>No Chat-side signup</span>
-                        <span>Provider-scoped user isolation</span>
-                        <span>Server-to-server bootstrap</span>
+                    <div class="docs-kicker">HILLBCS Chats • Integration Docs</div>
+                    <div class="docs-tabbar" role="tablist" aria-label="Integration guide tabs">
+                        <button type="button" class="docs-tabbar__button is-active" data-doc-tab-trigger="sso" role="tab" aria-selected="true">SSO Integration</button>
+                        <button type="button" class="docs-tabbar__button" data-doc-tab-trigger="messaging" role="tab" aria-selected="false">External Messaging API</button>
+                    </div>
+                    <div class="docs-intro__pane" data-doc-tab-content="sso">
+                        <h1>Chat SSO Integrator Guide</h1>
+                        <p>
+                            Connect an upstream app such as Hiring Hall or Workspace to HILLBCS Chats using a
+                            provider-specific API key. The source system does not need to generate Chat JWTs directly.
+                        </p>
+                        <div class="docs-intro__chips">
+                            <span>No Chat-side signup</span>
+                            <span>Provider-scoped user isolation</span>
+                            <span>Server-to-server bootstrap</span>
+                        </div>
+                    </div>
+                    <div class="docs-intro__pane docs-tab-hidden" data-doc-tab-content="messaging">
+                        <h1>External Messaging API Guide</h1>
+                        <p>
+                            Send provider-scoped direct messages into HILLBCS Chats from an external system using a
+                            provider API key and upstream <code>provider_user_id</code> identity.
+                        </p>
+                        <div class="docs-intro__chips">
+                            <span>Provider-scoped sender resolution</span>
+                            <span>Outside-source message indicator</span>
+                            <span>Server-to-server delivery</span>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <section id="overview" class="docs-section">
+            <section id="overview" class="docs-section" data-doc-tab="sso">
                 <div class="docs-section__inner">
                     <h2>Overview</h2>
                     <p>
@@ -103,7 +125,7 @@
                 </div>
             </section>
 
-            <section id="chat-config" class="docs-section">
+            <section id="chat-config" class="docs-section" data-doc-tab="sso">
                 <div class="docs-section__inner">
                     <h2>Chat Configuration</h2>
                     <p>
@@ -119,21 +141,24 @@
                         </div>
                         <pre id="chat-env"><code>CHAT_SSO_WORKSPACE_SECRET=...
 CHAT_SSO_WORKSPACE_API_KEY=...
+CHAT_EXTERNAL_MESSAGING_WORKSPACE_API_KEY=...
 HILLBCS_WORKSPACE_URL=https://workspace.hillbcs.com
 
 CHAT_SSO_HIRE_SECRET=...
 CHAT_SSO_HIRE_API_KEY=...
+CHAT_EXTERNAL_MESSAGING_HIRE_API_KEY=...
 HILLBCS_HIRE_URL=https://hire.hillbcs.com</code></pre>
                     </div>
 
                     <div class="docs-callout docs-callout--warn">
                         <strong>Do not reuse keys across providers.</strong> Workspace and Hiring Hall should keep separate API
-                        keys and separate SSO secrets to preserve isolation and safe rotation.
+                        keys and separate SSO secrets to preserve isolation and safe rotation. External messaging keys can
+                        also be split out separately when you want messaging rotation independent from SSO.
                     </div>
                 </div>
             </section>
 
-            <section id="endpoint" class="docs-section">
+            <section id="endpoint" class="docs-section" data-doc-tab="sso">
                 <div class="docs-section__inner">
                     <div class="docs-endpoint-heading">
                         <h2>API Endpoint</h2>
@@ -141,6 +166,11 @@ HILLBCS_HIRE_URL=https://hire.hillbcs.com</code></pre>
                             <span class="endpoint-chip__method">POST</span>
                             <span>/api/integrations/sso/login-url</span>
                         </div>
+                    </div>
+
+                    <div class="docs-callout">
+                        <strong>Auth options:</strong> use the optional dedicated external messaging key for the provider,
+                        or fall back to the provider SSO API key if you want one shared key per provider.
                     </div>
 
                     <h3>Request headers</h3>
@@ -238,7 +268,7 @@ Content-Type: application/json</code></pre>
                 </div>
             </section>
 
-            <section id="flow" class="docs-section">
+            <section id="flow" class="docs-section" data-doc-tab="sso">
                 <div class="docs-section__inner">
                     <h2>Integration Flow</h2>
                     <ol class="flow-list">
@@ -256,7 +286,123 @@ Content-Type: application/json</code></pre>
                 </div>
             </section>
 
-            <section id="laravel" class="docs-section">
+            <section id="external-messaging" class="docs-section" data-doc-tab="messaging">
+                <div class="docs-section__inner">
+                    <div class="docs-endpoint-heading">
+                        <h2>External Messaging API</h2>
+                        <div class="endpoint-chip">
+                            <span class="endpoint-chip__method">POST</span>
+                            <span>/api/messages/{email}</span>
+                        </div>
+                    </div>
+
+                    <p>
+                        Send a direct message into HILLBCS Chats from an external system using either the optional
+                        provider-specific external messaging key or the provider SSO API key. The sender is resolved by
+                        <code>provider_user_id</code> inside the provider scope,
+                        and the message is visibly marked inside Chat as coming from outside.
+                    </p>
+
+                    <h3>Request headers</h3>
+                    <div class="code-block">
+                        <div class="code-block__header">
+                            <span class="code-block__label">HTTP</span>
+                            <button type="button" class="code-block__copy" data-copy-target="external-request-headers">Copy</button>
+                        </div>
+                        <pre id="external-request-headers"><code>X-API-KEY: &lt;CHAT_EXTERNAL_MESSAGING_PROVIDER_API_KEY or CHAT_SSO_PROVIDER_API_KEY&gt;
+Accept: application/json
+Content-Type: application/json</code></pre>
+                    </div>
+
+                    <h3>Request body</h3>
+                    <div class="code-block">
+                        <div class="code-block__header">
+                            <span class="code-block__label">JSON</span>
+                            <button type="button" class="code-block__copy" data-copy-target="external-request-body">Copy</button>
+                        </div>
+                        <pre id="external-request-body"><code>{
+  "provider_user_id": "123",
+  "me": "sender@example.com",
+  "message": "Hello from external system"
+}</code></pre>
+                    </div>
+
+                    <h3>Request fields</h3>
+                    <div class="table-wrap">
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Field</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>provider_user_id</code></td>
+                                    <td>Yes</td>
+                                    <td>Stable upstream sender id inside the provider identified by the API key.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>me</code></td>
+                                    <td>Yes</td>
+                                    <td>Sender email. Must match the resolved provider-scoped Chat identity.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>message</code></td>
+                                    <td>Yes</td>
+                                    <td>Plain text message body.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>user_id</code></td>
+                                    <td>No</td>
+                                    <td>Legacy internal Chat sender id. Deprecated and only used as an optional consistency check.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3>Success response</h3>
+                    <div class="code-block">
+                        <div class="code-block__header">
+                            <span class="code-block__label">JSON</span>
+                            <button type="button" class="code-block__copy" data-copy-target="external-success-response">Copy</button>
+                        </div>
+                        <pre id="external-success-response"><code>{
+  "success": true,
+  "message": "Message sent successfully",
+  "data": {
+    "conversation_id": "01JV...",
+    "message_id": 1001,
+    "sender_id": "01JV...",
+    "receiver_id": "01JW...",
+    "is_read": false,
+    "created_at": "2026-05-15T12:45:00Z"
+  }
+}</code></pre>
+                    </div>
+
+                    <h3>cURL example</h3>
+                    <div class="code-block">
+                        <div class="code-block__header">
+                            <span class="code-block__label">bash</span>
+                            <button type="button" class="code-block__copy" data-copy-target="external-curl">Copy</button>
+                        </div>
+                        <pre id="external-curl"><code>curl -X POST "https://chats.hillbcs.com/api/messages/receiver@example.com"   -H "Content-Type: application/json"   -H "X-API-KEY: YOUR_PROVIDER_API_KEY"   -d '{
+    "provider_user_id": "123",
+    "me": "sender@example.com",
+    "message": "Hello from CRM"
+  }'</code></pre>
+                    </div>
+
+                    <div class="docs-callout docs-callout--warn">
+                        <strong>Scope rules still apply.</strong> The provider API key and <code>provider_user_id</code>
+                        must resolve to a sender in the same provider scope as the receiver. Cross-provider sends are rejected.
+                    </div>
+                </div>
+            </section>
+
+            <section id="laravel" class="docs-section" data-doc-tab="sso">
                 <div class="docs-section__inner">
                     <h2>Laravel Example</h2>
                     <p>This is the recommended pattern for apps such as <code>hillbcs-hire</code>.</p>
@@ -346,7 +492,7 @@ class ChatSsoController extends Controller
                 </div>
             </section>
 
-            <section id="curl" class="docs-section">
+            <section id="curl" class="docs-section" data-doc-tab="sso">
                 <div class="docs-section__inner">
                     <h2>cURL Example</h2>
                     <div class="code-block">
@@ -371,7 +517,7 @@ class ChatSsoController extends Controller
                 </div>
             </section>
 
-            <section id="notes" class="docs-section">
+            <section id="notes" class="docs-section" data-doc-tab="sso">
                 <div class="docs-section__inner">
                     <h2>Integrator Notes</h2>
                     <ul>
@@ -384,7 +530,7 @@ class ChatSsoController extends Controller
                 </div>
             </section>
 
-            <section id="maintainers" class="docs-section">
+            <section id="maintainers" class="docs-section" data-doc-tab="sso">
                 <div class="docs-section__inner">
                     <h2>Maintainer Notes</h2>
                     <ul>
@@ -398,14 +544,14 @@ class ChatSsoController extends Controller
         </main>
 
         <aside class="docs-rail">
-            <div class="docs-rail__panel">
+            <div class="docs-rail__panel" data-doc-tab="sso">
                 <button type="button" class="rail-op">
                     <span class="rail-op__method">POST</span>
                     <span class="rail-op__path">/api/integrations/sso/login-url</span>
                 </button>
             </div>
 
-            <div class="docs-rail__panel">
+            <div class="docs-rail__panel" data-doc-tab="sso">
                 <h3>Quickstart</h3>
                 <ol>
                     <li>Configure provider env vars in Chat.</li>
@@ -415,7 +561,7 @@ class ChatSsoController extends Controller
                 </ol>
             </div>
 
-            <div class="docs-rail__panel">
+            <div class="docs-rail__panel" data-doc-tab="sso">
                 <h3>Provider Isolation</h3>
                 <p>Workspace users only see Workspace users. Hiring Hall users only see Hiring Hall users.</p>
                 <ul>
@@ -425,7 +571,7 @@ class ChatSsoController extends Controller
                 </ul>
             </div>
 
-            <div class="docs-rail__panel">
+            <div class="docs-rail__panel" data-doc-tab="sso">
                 <h3>Minimal Payload</h3>
                 <div class="code-block code-block--rail">
                     <div class="code-block__header">
@@ -436,6 +582,48 @@ class ChatSsoController extends Controller
   "provider_user_id": "123",
   "email": "user@example.com",
   "name": "Jane Doe"
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="docs-rail__panel docs-tab-hidden" data-doc-tab="messaging">
+                <button type="button" class="rail-op">
+                    <span class="rail-op__method">POST</span>
+                    <span class="rail-op__path">/api/messages/{email}</span>
+                </button>
+            </div>
+
+            <div class="docs-rail__panel docs-tab-hidden" data-doc-tab="messaging">
+                <h3>Quickstart</h3>
+                <ol>
+                    <li>Assign a provider API key to the external system.</li>
+                    <li>Prefer a dedicated external messaging key if you want rotation separate from SSO.</li>
+                    <li>Use the upstream <code>provider_user_id</code> as the sender identity.</li>
+                    <li>Call <code>/api/messages/{email}</code> from the source backend.</li>
+                    <li>Messages appear in Chat with an outside-source indicator.</li>
+                </ol>
+            </div>
+
+            <div class="docs-rail__panel docs-tab-hidden" data-doc-tab="messaging">
+                <h3>Delivery Rules</h3>
+                <ul>
+                    <li>Sender and receiver must be in the same provider scope</li>
+                    <li>Sender email must match the resolved provider identity</li>
+                    <li>Cross-provider delivery is rejected</li>
+                </ul>
+            </div>
+
+            <div class="docs-rail__panel docs-tab-hidden" data-doc-tab="messaging">
+                <h3>Minimal Payload</h3>
+                <div class="code-block code-block--rail">
+                    <div class="code-block__header">
+                        <span class="code-block__label">JSON</span>
+                        <button type="button" class="code-block__copy" data-copy-target="side-payload-external">Copy</button>
+                    </div>
+                    <pre id="side-payload-external"><code>{
+  "provider_user_id": "123",
+  "me": "sender@example.com",
+  "message": "Hello from external system"
 }</code></pre>
                 </div>
             </div>
