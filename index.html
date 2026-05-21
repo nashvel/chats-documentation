@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chat SSO Integrator Guide</title>
+    <meta name="description" content="Provider-based SSO integration guide for HILLBCS Chats.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+    <button type="button" class="docs-menu-toggle" data-menu-toggle aria-expanded="false" aria-controls="docsNav">
+        <span></span>
+        <span></span>
+    </button>
+
+    <div class="docs-app">
+        <aside id="docsNav" class="docs-nav" aria-label="Documentation navigation">
+            <div class="docs-nav__top">
+                <div class="docs-nav__brand">
+                    <div class="docs-nav__title">HILLBCS Chats</div>
+                    <div class="docs-nav__subtitle">SSO Integration</div>
+                </div>
+
+                <label class="docs-nav__search">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M10.5 4a6.5 6.5 0 1 1 0 13a6.5 6.5 0 0 1 0-13Zm0 1.8a4.7 4.7 0 1 0 0 9.4a4.7 4.7 0 0 0 0-9.4Zm8.77 11.2 1.27 1.27-2.26 2.26-1.27-1.27z"></path>
+                    </svg>
+                    <input id="navSearch" type="search" placeholder="Search..." aria-label="Search sections">
+                </label>
+            </div>
+
+            <nav class="docs-nav__menu">
+                <a href="#overview" data-nav-item>
+                    <span class="nav-method nav-method--basic">guide</span>
+                    <span>Overview</span>
+                </a>
+                <a href="#chat-config" data-nav-item>
+                    <span class="nav-method nav-method--basic">config</span>
+                    <span>Chat Configuration</span>
+                </a>
+                <a href="#endpoint" data-nav-item>
+                    <span class="nav-method nav-method--post">post</span>
+                    <span>Login URL Endpoint</span>
+                </a>
+                <a href="#flow" data-nav-item>
+                    <span class="nav-method nav-method--basic">flow</span>
+                    <span>Integration Flow</span>
+                </a>
+                <a href="#laravel" data-nav-item>
+                    <span class="nav-method nav-method--basic">php</span>
+                    <span>Laravel Example</span>
+                </a>
+                <a href="#curl" data-nav-item>
+                    <span class="nav-method nav-method--post">curl</span>
+                    <span>cURL Example</span>
+                </a>
+                <a href="#notes" data-nav-item>
+                    <span class="nav-method nav-method--basic">notes</span>
+                    <span>Integrator Notes</span>
+                </a>
+                <a href="#maintainers" data-nav-item>
+                    <span class="nav-method nav-method--basic">ops</span>
+                    <span>Maintainer Notes</span>
+                </a>
+            </nav>
+
+            <div class="docs-nav__footer">
+                Static docs bundle for GitHub Pages.
+            </div>
+        </aside>
+
+        <main class="docs-main">
+            <section class="docs-intro">
+                <div class="docs-intro__inner">
+                    <div class="docs-kicker">HILLBCS Chats • SSO Integration</div>
+                    <h1>Chat SSO Integrator Guide</h1>
+                    <p>
+                        Connect an upstream app such as Hiring Hall or Workspace to HILLBCS Chats using a
+                        provider-specific API key. The source system does not need to generate Chat JWTs directly.
+                    </p>
+                    <div class="docs-intro__chips">
+                        <span>No Chat-side signup</span>
+                        <span>Provider-scoped user isolation</span>
+                        <span>Server-to-server bootstrap</span>
+                    </div>
+                </div>
+            </section>
+
+            <section id="overview" class="docs-section">
+                <div class="docs-section__inner">
+                    <h2>Overview</h2>
+                    <p>
+                        Chat exposes a provider-aware bootstrap endpoint. The source app calls the endpoint from its
+                        backend, receives a short-lived login URL, then redirects the browser into Chat.
+                    </p>
+                    <div class="docs-callout docs-callout--success">
+                        <strong>Recommended identity model:</strong> use <code>provider_user_id</code> as the stable upstream
+                        identity and treat email as a profile field rather than the primary cross-system key.
+                    </div>
+                </div>
+            </section>
+
+            <section id="chat-config" class="docs-section">
+                <div class="docs-section__inner">
+                    <h2>Chat Configuration</h2>
+                    <p>
+                        Each upstream app needs its own provider block in <code>hillbcs-chats</code>. Every provider must
+                        have a dedicated API key and SSO secret.
+                    </p>
+
+                    <h3>Relevant Chat env vars</h3>
+                    <div class="code-block">
+                        <div class="code-block__header">
+                            <span class="code-block__label">.env</span>
+                            <button type="button" class="code-block__copy" data-copy-target="chat-env">Copy</button>
+                        </div>
+                        <pre id="chat-env"><code>CHAT_SSO_WORKSPACE_SECRET=...
+CHAT_SSO_WORKSPACE_API_KEY=...
+HILLBCS_WORKSPACE_URL=https://workspace.hillbcs.com
+
+CHAT_SSO_HIRE_SECRET=...
+CHAT_SSO_HIRE_API_KEY=...
+HILLBCS_HIRE_URL=https://hire.hillbcs.com</code></pre>
+                    </div>
+
+                    <div class="docs-callout docs-callout--warn">
+                        <strong>Do not reuse keys across providers.</strong> Workspace and Hiring Hall should keep separate API
+                        keys and separate SSO secrets to preserve isolation and safe rotation.
+                    </div>
+                </div>
+            </section>
+
+            <section id="endpoint" class="docs-section">
+                <div class="docs-section__inner">
+                    <div class="docs-endpoint-heading">
+                        <h2>API Endpoint</h2>
+                        <div class="endpoint-chip">
+                            <span class="endpoint-chip__method">POST</span>
+                            <span>/api/integrations/sso/login-url</span>
+                        </div>
+                    </div>
+
+                    <h3>Request headers</h3>
+                    <div class="code-block">
+                        <div class="code-block__header">
+                            <span class="code-block__label">HTTP</span>
+                            <button type="button" class="code-block__copy" data-copy-target="request-headers">Copy</button>
+                        </div>
+                        <pre id="request-headers"><code>X-API-KEY: &lt;provider-api-key&gt;
+Accept: application/json
+Content-Type: application/json</code></pre>
+                    </div>
+
+                    <h3>Request body</h3>
+                    <div class="code-block">
+                        <div class="code-block__header">
+                            <span class="code-block__label">JSON</span>
+                            <button type="button" class="code-block__copy" data-copy-target="request-body">Copy</button>
+                        </div>
+                        <pre id="request-body"><code>{
+  "provider_user_id": "123",
+  "email": "user@example.com",
+  "name": "Jane Doe",
+  "avatar": "https://hire.hillbcs.com/storage/avatars/jane.jpg",
+  "role": "employee",
+  "source_url": "https://hire.hillbcs.com/dashboard",
+  "redirect_to": "/chat"
+}</code></pre>
+                    </div>
+
+                    <h3>Request fields</h3>
+                    <div class="table-wrap">
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Field</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>provider_user_id</code></td>
+                                    <td>Yes</td>
+                                    <td>Stable unique id from the source app.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>email</code></td>
+                                    <td>Yes</td>
+                                    <td>User email from the source app.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>name</code></td>
+                                    <td>Yes</td>
+                                    <td>User display name.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>avatar</code></td>
+                                    <td>No</td>
+                                    <td>Avatar URL used to hydrate the Chat profile.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>role</code></td>
+                                    <td>No</td>
+                                    <td>Source-system role value if needed for display or policy.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>source_url</code></td>
+                                    <td>No</td>
+                                    <td>Return destination for “Back to App” inside Chat.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>redirect_to</code></td>
+                                    <td>No</td>
+                                    <td>Desired in-Chat route after login, usually <code>/chat</code>.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3>Success response</h3>
+                    <div class="code-block">
+                        <div class="code-block__header">
+                            <span class="code-block__label">JSON</span>
+                            <button type="button" class="code-block__copy" data-copy-target="success-response">Copy</button>
+                        </div>
+                        <pre id="success-response"><code>{
+  "success": true,
+  "provider": "hire",
+  "expires_in": 60,
+  "login_url": "https://chat.hillbcs.com/sso/login?token=...",
+  "token": "..."
+}</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="flow" class="docs-section">
+                <div class="docs-section__inner">
+                    <h2>Integration Flow</h2>
+                    <ol class="flow-list">
+                        <li>User is already authenticated inside the source app.</li>
+                        <li>Source backend calls Chat’s <code>login-url</code> endpoint.</li>
+                        <li>Chat validates the provider API key and mints a short-lived SSO token.</li>
+                        <li>Source app receives <code>login_url</code>.</li>
+                        <li>Source app redirects the browser into Chat.</li>
+                        <li>Chat logs the user in and restores the provider-scoped identity.</li>
+                    </ol>
+
+                    <div class="docs-callout">
+                        <strong>Important:</strong> call the bootstrap endpoint from the server. Never expose the provider API key in frontend JavaScript.
+                    </div>
+                </div>
+            </section>
+
+            <section id="laravel" class="docs-section">
+                <div class="docs-section__inner">
+                    <h2>Laravel Example</h2>
+                    <p>This is the recommended pattern for apps such as <code>hillbcs-hire</code>.</p>
+
+                    <div class="docs-subgrid">
+                        <div>
+                            <h3>Source app env</h3>
+                            <div class="code-block">
+                                <div class="code-block__header">
+                                    <span class="code-block__label">.env</span>
+                                    <button type="button" class="code-block__copy" data-copy-target="source-env">Copy</button>
+                                </div>
+                                <pre id="source-env"><code>CHAT_BASE_URL=https://chat.hillbcs.com
+CHAT_SSO_API_KEY=replace-with-hire-provider-api-key</code></pre>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3>Source app config</h3>
+                            <div class="code-block">
+                                <div class="code-block__header">
+                                    <span class="code-block__label">PHP Config</span>
+                                    <button type="button" class="code-block__copy" data-copy-target="source-config">Copy</button>
+                                </div>
+                                <pre id="source-config"><code>'chat' =&gt; [
+    'base_url' =&gt; env('CHAT_BASE_URL'),
+    'api_key' =&gt; env('CHAT_SSO_API_KEY'),
+],</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3>Controller example</h3>
+                    <div class="code-block">
+                        <div class="code-block__header">
+                            <span class="code-block__label">PHP</span>
+                            <button type="button" class="code-block__copy" data-copy-target="controller-example">Copy</button>
+                        </div>
+                        <pre id="controller-example"><code>&lt;?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+
+class ChatSsoController extends Controller
+{
+    public function redirectToChat(Request $request): RedirectResponse
+    {
+        $user = $request-&gt;user();
+
+        $response = Http::acceptJson()
+            -&gt;withHeaders([
+                'X-API-KEY' =&gt; config('services.chat.api_key'),
+            ])
+            -&gt;post(rtrim(config('services.chat.base_url'), '/').'/api/integrations/sso/login-url', [
+                'provider_user_id' =&gt; (string) $user-&gt;id,
+                'email' =&gt; (string) $user-&gt;email,
+                'name' =&gt; (string) $user-&gt;name,
+                'avatar' =&gt; $user-&gt;avatar_url,
+                'role' =&gt; $user-&gt;role ?? 'user',
+                'source_url' =&gt; url('/dashboard'),
+                'redirect_to' =&gt; '/chat',
+            ]);
+
+        abort_unless($response-&gt;successful(), 502, 'Chat SSO bootstrap failed.');
+
+        $loginUrl = (string) data_get($response-&gt;json(), 'login_url', '');
+        abort_if($loginUrl === '', 502, 'Chat login URL missing.');
+
+        return redirect()-&gt;away($loginUrl);
+    }
+}</code></pre>
+                    </div>
+
+                    <h3>Route example</h3>
+                    <div class="code-block">
+                        <div class="code-block__header">
+                            <span class="code-block__label">Routes</span>
+                            <button type="button" class="code-block__copy" data-copy-target="route-example">Copy</button>
+                        </div>
+                        <pre id="route-example"><code>Route::middleware('auth')
+    -&gt;get('/sso/chat', [ChatSsoController::class, 'redirectToChat'])
+    -&gt;name('sso.chat');</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="curl" class="docs-section">
+                <div class="docs-section__inner">
+                    <h2>cURL Example</h2>
+                    <div class="code-block">
+                        <div class="code-block__header">
+                            <span class="code-block__label">Terminal</span>
+                            <button type="button" class="code-block__copy" data-copy-target="curl-example">Copy</button>
+                        </div>
+                        <pre id="curl-example"><code>curl -X POST "https://chat.hillbcs.com/api/integrations/sso/login-url" \
+  -H "X-API-KEY: replace-with-provider-api-key" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider_user_id": "123",
+    "email": "user@example.com",
+    "name": "Jane Doe",
+    "avatar": "https://hire.hillbcs.com/storage/avatars/jane.jpg",
+    "role": "employee",
+    "source_url": "https://hire.hillbcs.com/dashboard",
+    "redirect_to": "/chat"
+  }'</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="notes" class="docs-section">
+                <div class="docs-section__inner">
+                    <h2>Integrator Notes</h2>
+                    <ul>
+                        <li>Call the endpoint from the server, not frontend JavaScript.</li>
+                        <li>Treat the provider API key as a secret.</li>
+                        <li>Each provider must have its own API key.</li>
+                        <li>The returned <code>login_url</code> is short-lived and currently expires in <code>60</code> seconds.</li>
+                        <li><code>provider_user_id</code> must stay stable for the lifetime of the upstream user.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="maintainers" class="docs-section">
+                <div class="docs-section__inner">
+                    <h2>Maintainer Notes</h2>
+                    <ul>
+                        <li>Run provider-identity migrations before onboarding another app.</li>
+                        <li>Keep provider API keys and SSO secrets separate.</li>
+                        <li>If the same email exists in multiple providers, preserve provider isolation and use explicit linking where needed.</li>
+                        <li>Any email-only admin or API surface must become provider-aware once duplicate emails exist.</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <aside class="docs-rail">
+            <div class="docs-rail__panel">
+                <button type="button" class="rail-op">
+                    <span class="rail-op__method">POST</span>
+                    <span class="rail-op__path">/api/integrations/sso/login-url</span>
+                </button>
+            </div>
+
+            <div class="docs-rail__panel">
+                <h3>Quickstart</h3>
+                <ol>
+                    <li>Configure provider env vars in Chat.</li>
+                    <li>Give the integrator a provider API key.</li>
+                    <li>Call <code>/api/integrations/sso/login-url</code> from the source backend.</li>
+                    <li>Redirect the browser to <code>login_url</code>.</li>
+                </ol>
+            </div>
+
+            <div class="docs-rail__panel">
+                <h3>Provider Isolation</h3>
+                <p>Workspace users only see Workspace users. Hiring Hall users only see Hiring Hall users.</p>
+                <ul>
+                    <li>Search is provider-scoped</li>
+                    <li>DM creation is provider-scoped</li>
+                    <li>Group membership is provider-scoped</li>
+                </ul>
+            </div>
+
+            <div class="docs-rail__panel">
+                <h3>Minimal Payload</h3>
+                <div class="code-block code-block--rail">
+                    <div class="code-block__header">
+                        <span class="code-block__label">JSON</span>
+                        <button type="button" class="code-block__copy" data-copy-target="side-payload">Copy</button>
+                    </div>
+                    <pre id="side-payload"><code>{
+  "provider_user_id": "123",
+  "email": "user@example.com",
+  "name": "Jane Doe"
+}</code></pre>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script src="./app.js"></script>
+</body>
+</html>
